@@ -15,6 +15,10 @@
  */
 package app.cash.redwood.layout.composeui
 
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
@@ -29,7 +33,9 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.offset
 import androidx.compose.ui.util.fastForEachIndexed
+import app.cash.redwood.layout.modifier.Margin
 import kotlin.math.max
 
 /**
@@ -42,7 +48,7 @@ import kotlin.math.max
 @Composable
 internal inline fun Box(
   childrenLayoutInfo: BoxChildrenLayoutInfo,
-  modifier: Modifier = Modifier,
+  modifier: Modifier = Modifier.padding(),
   propagateMinConstraints: Boolean = false,
   content: @Composable () -> Unit,
 ) {
@@ -67,6 +73,7 @@ internal data class BoxChildLayoutInfo(
   val alignment: Alignment,
   val matchParentWidth: Boolean,
   val matchParentHeight: Boolean,
+  val paddingValues: PaddingValues,
 )
 
 @PublishedApi
@@ -107,11 +114,18 @@ internal data class BoxMeasurePolicy(
           maxHeight = constraints.minHeight,
         )
       }
-      val placeable = measurable.measure(childConstraints)
+
+      val start = layoutInfo.paddingValues.calculateStartPadding(layoutDirection).roundToPx()
+      val end = layoutInfo.paddingValues.calculateEndPadding(layoutDirection).roundToPx()
+      val top = layoutInfo.paddingValues.calculateTopPadding().roundToPx()
+      val bottom = layoutInfo.paddingValues.calculateBottomPadding().roundToPx()
+      val horizontal = start + end
+      val vertical = top + bottom
+
+      val placeable = measurable.measure(childConstraints.offset(-horizontal, -vertical))
       val boxWidth = max(constraints.minWidth, placeable.width)
       val boxHeight = max(constraints.minHeight, placeable.height)
-
-      return layout(boxWidth, boxHeight) {
+      return layout(boxWidth + horizontal, boxHeight + vertical) {
         placeInBox(placeable, layoutDirection, boxWidth, boxHeight, childrenLayoutInfo[0])
       }
     }
@@ -126,10 +140,16 @@ internal data class BoxMeasurePolicy(
       if (layoutInfo.matchParentWidth || layoutInfo.matchParentHeight) {
         hasMatchParentSizeChildren = true
       } else {
-        val placeable = measurable.measure(contentConstraints)
+        val start = layoutInfo.paddingValues.calculateStartPadding(layoutDirection).roundToPx()
+        val end = layoutInfo.paddingValues.calculateEndPadding(layoutDirection).roundToPx()
+        val top = layoutInfo.paddingValues.calculateTopPadding().roundToPx()
+        val bottom = layoutInfo.paddingValues.calculateBottomPadding().roundToPx()
+        val horizontal = start + end
+        val vertical = top + bottom
+        val placeable = measurable.measure(contentConstraints.offset(-horizontal, -vertical))
         placeables[index] = placeable
-        boxWidth = max(boxWidth, placeable.width)
-        boxHeight = max(boxHeight, placeable.height)
+        boxWidth = max(boxWidth, placeable.width) + horizontal
+        boxHeight = max(boxHeight, placeable.height) + vertical
       }
     }
 
@@ -152,7 +172,15 @@ internal data class BoxMeasurePolicy(
               maxHeight = boxHeight,
             )
           }
-          placeables[index] = measurable.measure(childConstraints)
+          val start = layoutInfo.paddingValues.calculateStartPadding(layoutDirection).roundToPx()
+          val end = layoutInfo.paddingValues.calculateEndPadding(layoutDirection).roundToPx()
+          val top = layoutInfo.paddingValues.calculateTopPadding().roundToPx()
+          val bottom = layoutInfo.paddingValues.calculateBottomPadding().roundToPx()
+          val horizontal = start + end
+          val vertical = top + bottom
+          placeables[index] = measurable.measure(childConstraints.offset(-horizontal, -vertical))
+          boxWidth += horizontal
+          boxHeight += vertical
         }
       }
     }

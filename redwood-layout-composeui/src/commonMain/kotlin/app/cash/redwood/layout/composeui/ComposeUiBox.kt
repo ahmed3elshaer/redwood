@@ -38,6 +38,7 @@ import app.cash.redwood.layout.api.CrossAxisAlignment
 import app.cash.redwood.layout.modifier.Height
 import app.cash.redwood.layout.modifier.HorizontalAlignment
 import app.cash.redwood.layout.modifier.Margin as MarginModifier
+import androidx.compose.foundation.layout.PaddingValues
 import app.cash.redwood.layout.modifier.Size
 import app.cash.redwood.layout.modifier.VerticalAlignment
 import app.cash.redwood.layout.modifier.Width
@@ -85,6 +86,7 @@ internal class ComposeUiBox(
     var alignment = alignment
     var matchParentWidth = matchParentWidth
     var matchParentHeight = matchParentHeight
+    var margin = margin
 
     forEachScoped { childModifier ->
       when (childModifier) {
@@ -117,7 +119,7 @@ internal class ComposeUiBox(
         }
 
         is MarginModifier -> {
-          // TODO
+          margin = childModifier.margin
         }
       }
     }
@@ -134,8 +136,16 @@ internal class ComposeUiBox(
       alignment = alignment,
       matchParentWidth = matchParentWidth,
       matchParentHeight = matchParentHeight,
+      paddingValues = margin.toPaddingValues(),
     )
   }
+
+  private fun Margin.toPaddingValues() = PaddingValues(
+    start = start.toDp(),
+    top = top.toDp(),
+    end = end.toDp(),
+    bottom = bottom.toDp(),
+  )
 
   @Composable
   private fun computeModifier(): Modifier {
